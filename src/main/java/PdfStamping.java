@@ -1,15 +1,19 @@
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
-import javax.imageio.ImageIO;
 
 public class PdfStamping {
     public static void main(String[] args) throws Exception {
-
         Scanner scanner = new Scanner(System.in);
         String text;
 
@@ -18,31 +22,61 @@ public class PdfStamping {
             text = scanner.nextLine();
         } while (text.length() > 3);
 
-        BufferedImage existingImage = ImageIO.read(new File("C:\\Users\\maria\\stamp-clipart-round-7.png"));
+        BufferedImage existingImage = ImageIO.read(new File("C:\\PdfStamping\\src\\main\\java\\stamp-clipart-round-7.png"));
 
+        // Add text to the image
+        addTextToImage(existingImage, text);
+
+        // Save the modified image
+        ImageIO.write(existingImage, "png", new File("C:\\PdfStamping\\src\\main\\java\\modified-stamp.png"));
+
+        System.out.println("Text added to the stamp image");
+
+        // Create PDF with the modified image
+        createPdfWithImage(existingImage, "C:\\PdfStamping\\src\\main\\java\\modified-stamp-pdf.pdf");
+
+        System.out.println("Stamp image is added to the PDF file");
+
+        scanner.close();
+    }
+
+    private static void addTextToImage(BufferedImage image, String text) {
         // Create a graphics object to draw on the existing image
-        Graphics graphics = existingImage.getGraphics();
+        Graphics graphics = image.getGraphics();
 
         // Set the font and color for the text
         graphics.setColor(Color.BLACK);
-        graphics.setFont(new Font("Arial Black", Font.BOLD, 250));
+        graphics.setFont(new Font("Arial Black", Font.BOLD, 240));
 
         // Get the FontMetrics to calculate text width
         FontMetrics fontMetrics = graphics.getFontMetrics();
         int textWidth = fontMetrics.stringWidth(text);
 
         // Calculate the center coordinates
-        int centerX = (existingImage.getWidth() - textWidth) / 2;
-        int centerY = existingImage.getHeight() / 2;
+        int centerX = (image.getWidth() - textWidth) / 2;
+        int centerY = image.getHeight() / 2;
 
         // Draw the user input text at the center
         graphics.drawString(text, centerX, centerY);
 
+        // Dispose of the graphics object
+        graphics.dispose();
+    }
 
-        ImageIO.write(existingImage, "png", new File("C:\\Users\\maria\\modified-stamp14.png"));
+    private static void createPdfWithImage(BufferedImage image, String pdfFilePath) throws IOException {
+        PDDocument document = new PDDocument();
+        PDPage page = new PDPage(PDRectangle.A4);
+        document.addPage(page);
 
-        System.out.println("Text added to the existing image at the center");
+        PDImageXObject pdImage = LosslessFactory.createFromImage(document, image);
 
-        scanner.close();
+        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+
+            // Add the image to the PDF page
+            contentStream.drawImage(pdImage,450,20,100,100);
+        }
+
+        document.save(pdfFilePath);
+        document.close();
     }
 }
